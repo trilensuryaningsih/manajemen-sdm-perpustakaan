@@ -1,0 +1,112 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id         Int       @id @default(autoincrement())
+  name       String
+  email      String    @unique
+  password   String
+  role       Role      @relation(fields: [roleId], references: [id])
+  roleId     Int
+  
+  // --- KOLOM BARU (Sesuai Desain) ---
+  phone      String?   // Nomor Telepon (Boleh kosong)
+  position   String?   // Jabatan/Posisi (Boleh kosong)
+  joinDate   DateTime? // Tanggal Bergabung (Boleh kosong)
+  // ----------------------------------
+
+  createdAt  DateTime  @default(now())
+  attendance Attendance[]
+  reports    DailyReport[]
+  tasks      Task[]    @relation("Assignee")
+  createdTasks Task[]  @relation("Creator")
+  comments TaskComment[]
+}
+
+model Role {
+  id    Int    @id @default(autoincrement())
+  name  String @unique
+  users User[]
+}
+
+model Attendance {
+  id        Int      @id @default(autoincrement())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    Int
+  date      DateTime
+  checkIn   DateTime
+  checkOut  DateTime?
+  note      String?
+}
+
+model Task {
+  id          Int       @id @default(autoincrement())
+  title       String
+  description String?
+  assignee    User?     @relation("Assignee", fields: [assigneeId], references: [id])
+  assigneeId  Int?
+  createdById Int
+  createdBy   User      @relation("Creator", fields: [createdById], references: [id])
+  status      TaskStatus @default(PENDING)
+  dueDate     DateTime?
+  comments    TaskComment[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model TaskComment {
+  id      Int    @id @default(autoincrement())
+  task    Task   @relation(fields: [taskId], references: [id])
+  taskId  Int
+  author  User   @relation(fields: [authorId], references: [id])
+  authorId Int
+  text    String
+  createdAt DateTime @default(now())
+}
+
+model DailyReport {
+  id        Int      @id @default(autoincrement())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    Int
+  date      DateTime
+  content   String
+  attachments Attachment[]
+  createdAt DateTime @default(now())
+}
+
+model Attachment {
+  id        Int @id @default(autoincrement())
+  filename  String
+  url       String
+  report    DailyReport? @relation(fields: [reportId], references: [id])
+  reportId  Int?
+}
+
+model ActivityLog {
+  id        Int @id @default(autoincrement())
+  userId    Int
+  action    String
+  metadata  Json?
+  createdAt DateTime @default(now())
+}
+
+enum TaskStatus {
+  PENDING
+  IN_PROGRESS
+  DONE
+  CANCELLED
+}
+
