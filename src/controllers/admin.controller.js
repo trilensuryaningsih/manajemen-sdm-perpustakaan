@@ -15,18 +15,28 @@ const dashboard = async (req, res, next) => {
 
     const totalUsers = await prisma.user.count({
       where: {
-      role: {
-      name: { not: "ADMIN" } // admin tidak dihitung
+        role: {
+          name: { not: 'ADMIN' } // admin tidak dihitung
+        }
       }
-    }
     });
-    const presentToday = await prisma.attendance.count({ where: { date: today } });
-    const tasksDoneToday = await prisma.task.count({ where: { status: 'DONE', updatedAt: { gte: today } } });
-    const reportsToday = await prisma.dailyReport.count({ where: { date: today } });
+
+    const presentToday = await prisma.attendance.count({
+      where: { date: today }
+    });
+
+    const tasksDoneToday = await prisma.task.count({
+      where: { status: 'DONE', updatedAt: { gte: today } }
+    });
+
+    const reportsToday = await prisma.dailyReport.count({
+      where: { date: today }
+    });
 
     res.json({ totalUsers, presentToday, tasksDoneToday, reportsToday });
-
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 };
 
 // =======================================
@@ -61,9 +71,13 @@ const listUsers = async (req, res, next) => {
 
     const total = await prisma.user.count({ where });
 
-    res.json({ data: users, meta: { total, page: parseInt(page), limit: take } });
-
-  } catch (err) { next(err); }
+    res.json({
+      data: users,
+      meta: { total, page: parseInt(page), limit: take }
+    });
+  } catch (err) {
+    next(err);
+  }
 };
 
 // =======================================
@@ -81,8 +95,9 @@ const getUser = async (req, res, next) => {
     if (!user) return res.status(404).json({ message: 'User not found' });
 
     res.json(user);
-
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 };
 
 // =======================================
@@ -92,35 +107,51 @@ const createUser = async (req, res, next) => {
   try {
     const { name, email, password, role, phone, position } = req.body;
 
+    // hash password (kalau kosong, default "password")
     const hashed = await bcrypt.hash(password || 'password', 10);
 
-    let roleRecord = await prisma.role.findUnique({ where: { name: role || user.position } });
+    // role sistem: default "TENAGA" jika tidak dikirim dari FE
+    const roleName = role || 'TENAGA';
+
+    // pastikan role ada di tabel role
+    let roleRecord = await prisma.role.findUnique({
+      where: { name: roleName }
+    });
+
     if (!roleRecord) {
-      roleRecord = await prisma.role.create({ data: { name: role || user.position } });
+      roleRecord = await prisma.role.create({
+        data: { name: roleName }
+      });
     }
 
+    // buat user baru dengan phone & position disimpan di tabel user
     const user = await prisma.user.create({
       data: {
         name,
         email,
         password: hashed,
-        phone: phone || null,      // ⭐ phone disimpan
-        position: position || null, // ⭐ position disimpan
+        phone: phone || null,      // phone disimpan
+        position: position || null, // position disimpan
         roleId: roleRecord.id
       }
     });
 
-    logActivity(req.user?.userId, 'USER_CREATE', { targetUserId: user.id }).catch(() => {});
+    // log aktivitas (non-blocking)
+    logActivity(req.user?.userId, 'USER_CREATE', {
+      targetUserId: user.id
+    }).catch(() => {});
 
     res.status(201).json({
       id: user.id,
       name: user.name,
       email: user.email,
       phone: user.phone,
-      position: user.position
+      position: user.position,
+      role: roleRecord.name
     });
-
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 };
 
 // =======================================
@@ -137,14 +168,18 @@ const updateUser = async (req, res, next) => {
     if (email) data.email = email;
     if (password) data.password = await bcrypt.hash(password, 10);
 
-    // ⭐ Tambahan phone dan position
+    // Tambahan phone dan position
     if (phone !== undefined) data.phone = phone;
     if (position !== undefined) data.position = position;
 
     if (role) {
-      let roleRecord = await prisma.role.findUnique({ where: { name: role } });
+      let roleRecord = await prisma.role.findUnique({
+        where: { name: role }
+      });
       if (!roleRecord) {
-        roleRecord = await prisma.role.create({ data: { name: role } });
+        roleRecord = await prisma.role.create({
+          data: { name: role }
+        });
       }
       data.roleId = roleRecord.id;
     }
@@ -154,7 +189,9 @@ const updateUser = async (req, res, next) => {
       data
     });
 
-    logActivity(req.user?.userId, 'USER_UPDATE', { targetUserId: updated.id }).catch(() => {});
+    logActivity(req.user?.userId, 'USER_UPDATE', {
+      targetUserId: updated.id
+    }).catch(() => {});
 
     res.json({
       id: updated.id,
@@ -163,8 +200,9 @@ const updateUser = async (req, res, next) => {
       phone: updated.phone,
       position: updated.position
     });
-
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 };
 
 // =======================================
@@ -176,11 +214,14 @@ const deleteUser = async (req, res, next) => {
 
     await prisma.user.delete({ where: { id } });
 
-    logActivity(req.user?.userId, 'USER_DELETE', { targetUserId: id }).catch(() => {});
+    logActivity(req.user?.userId, 'USER_DELETE', {
+      targetUserId: id
+    }).catch(() => {});
 
     res.status(204).send();
-
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 };
 
 // =======================================
@@ -201,8 +242,9 @@ const listTasks = async (req, res, next) => {
     });
 
     res.json(tasks);
-
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 };
 
 // =======================================
@@ -224,8 +266,9 @@ const updateTaskStatus = async (req, res, next) => {
     }).catch(() => {});
 
     res.json(updated);
-
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 };
 
 // =======================================
@@ -248,8 +291,9 @@ const listActivity = async (req, res, next) => {
     });
 
     res.json(logs);
-
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 };
 
 // =======================================
@@ -291,17 +335,23 @@ const exportAttendance = async (req, res, next) => {
       for (const r of rows) {
         sheet.addRow({
           userId: r.userId,
-          name: r.user?.name || "",
-          email: r.user?.email || "",
+          name: r.user?.name || '',
+          email: r.user?.email || '',
           date: r.date.toISOString(),
-          checkIn: r.checkIn?.toISOString() || "",
-          checkOut: r.checkOut?.toISOString() || "",
-          note: r.note || ""
+          checkIn: r.checkIn?.toISOString() || '',
+          checkOut: r.checkOut?.toISOString() || '',
+          note: r.note || ''
         });
       }
 
-      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-      res.setHeader('Content-Disposition', `attachment; filename=attendance.xlsx`);
+      res.setHeader(
+        'Content-Type',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      );
+      res.setHeader(
+        'Content-Disposition',
+        'attachment; filename=attendance.xlsx'
+      );
       await workbook.xlsx.write(res);
       return res.end();
     }
@@ -325,10 +375,14 @@ const exportAttendance = async (req, res, next) => {
     }
 
     res.setHeader('Content-Type', 'text/csv');
-    res.setHeader('Content-Disposition', `attachment; filename=attendance.csv`);
+    res.setHeader(
+      'Content-Disposition',
+      'attachment; filename=attendance.csv'
+    );
     res.send(lines.join('\n'));
-
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 };
 
 // =======================================
