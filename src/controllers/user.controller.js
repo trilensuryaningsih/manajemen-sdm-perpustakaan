@@ -6,7 +6,7 @@ const getProfile = async (req, res, next) => {
 		const id = req.user?.userId;
 		const user = await prisma.user.findUnique({ where: { id }, include: { role: true } });
 		if (!user) return res.status(404).json({ message: 'User not found' });
-		res.json({ id: user.id, name: user.name, email: user.email, role: user.role.name, createdAt: user.createdAt });
+		res.json({ id: user.id, name: user.name, email: user.email, role: user.role.name, position: user.position, phone: user.phone, createdAt: user.createdAt });
 	} catch (err) { next(err); }
 };
 

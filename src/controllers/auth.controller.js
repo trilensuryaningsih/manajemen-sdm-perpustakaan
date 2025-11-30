@@ -8,9 +8,9 @@ const register = async (req, res, next) => {
     const { name, email, password, role } = req.body;
     const hashed = await bcrypt.hash(password, 10);
     // find role id
-    let roleRecord = await prisma.role.findUnique({ where: { name: role || 'TENAGA' }});
+    let roleRecord = await prisma.role.findUnique({ where: { name: role || user.position }});
     if (!roleRecord) {
-      roleRecord = await prisma.role.create({ data: { name: role || 'TENAGA' }});
+      roleRecord = await prisma.role.create({ data: { name: role || user.position }});
     }
     const user = await prisma.user.create({
       data: { name, email, password: hashed, roleId: roleRecord.id },
