@@ -10,6 +10,7 @@ const reportRoutes = require('./routes/reports.routes');
 const adminRoutes = require('./routes/admin');
 const errorHandler = require('./middlewares/error.middleware');
 
+
 const app = express();
 app.use(helmet());
 app.use(cors());
@@ -26,6 +27,9 @@ app.use('/api/attendance', attendanceRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/admin', adminRoutes);
+
+
+
 
 app.use(errorHandler);
 

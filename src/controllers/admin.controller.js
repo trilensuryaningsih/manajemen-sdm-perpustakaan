@@ -90,7 +90,7 @@ const getUser = async (req, res, next) => {
 // =======================================
 const createUser = async (req, res, next) => {
   try {
-    const { name, email, password, role, phone, position } = req.body;
+    const { name, email, password, role, phone, position, alamat } = req.body;
 
     const hashed = await bcrypt.hash(password || 'password', 10);
 
@@ -105,7 +105,8 @@ const createUser = async (req, res, next) => {
         email,
         password: hashed,
         phone: phone || null,      // ⭐ phone disimpan
-        position: position || null, // ⭐ position disimpan
+        position: position || null,
+        alamat: alamat || null,
         roleId: roleRecord.id
       }
     });
@@ -117,7 +118,8 @@ const createUser = async (req, res, next) => {
       name: user.name,
       email: user.email,
       phone: user.phone,
-      position: user.position
+      position: user.position,
+      alamat: user.alamat
     });
 
   } catch (err) { next(err); }

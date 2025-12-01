@@ -21,6 +21,7 @@ model User {
   password   String
   role       Role      @relation(fields: [roleId], references: [id])
   roleId     Int
+  alamat     String?
   
   // --- KOLOM BARU (Sesuai Desain) ---
   phone      String?   // Nomor Telepon (Boleh kosong)
@@ -34,6 +35,7 @@ model User {
   tasks      Task[]    @relation("Assignee")
   createdTasks Task[]  @relation("Creator")
   comments TaskComment[]
+  cuti      Cuti[]
 }
 
 model Role {
@@ -50,6 +52,7 @@ model Attendance {
   checkIn   DateTime
   checkOut  DateTime?
   note      String?
+  location  String
 }
 
 model Task {
@@ -60,11 +63,12 @@ model Task {
   assigneeId  Int?
   createdById Int
   createdBy   User      @relation("Creator", fields: [createdById], references: [id])
-  status      TaskStatus @default(PENDING)
+  status      TaskStatus @default(BARU)
   dueDate     DateTime?
   comments    TaskComment[]
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+  prioritas   prioritas @default(NORMAL)
 }
 
 model TaskComment {
@@ -82,7 +86,7 @@ model DailyReport {
   user      User     @relation(fields: [userId], references: [id])
   userId    Int
   date      DateTime
-  content   String
+  note      String
   attachments Attachment[]
   createdAt DateTime @default(now())
 }
@@ -103,10 +107,35 @@ model ActivityLog {
   createdAt DateTime @default(now())
 }
 
-enum TaskStatus {
-  PENDING
-  IN_PROGRESS
-  DONE
-  CANCELLED
+model Cuti {
+  id                Int      @id @default(autoincrement())
+  judul             String
+  tanggalMulai      DateTime
+  tanggalSelesai    DateTime
+  alasan            String
+  status            StatusCuti @default(MENUNGGU_KONFIRMASI)
+  alasanPenolakan   String?     
+  user              User?    @relation(fields: [userId], references: [id])
+  userId            Int?
+
 }
+
+
+enum TaskStatus {
+  BARU
+  SEDANG_DIKERJAKAN
+  SELESAI
+}
+
+enum prioritas {   // ← enum ditambahkan DI SINI
+  TINGGI
+  NORMAL
+}
+
+enum StatusCuti {
+  MENUNGGU_KONFIRMASI
+  DISETUJUI
+  DITOLAK
+}
+
 

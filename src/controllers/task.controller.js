@@ -11,10 +11,22 @@ const listForUser = async (req, res, next) => {
 
 const createTask = async (req, res, next) => {
   try {
-    const { title, description, assigneeId, dueDate } = req.body;
-    const task = await prisma.task.create({ data: { title, description: description || null, assigneeId: assigneeId || null, createdById: req.user.userId, dueDate: dueDate ? new Date(dueDate) : null } });
+    const { title, description, assigneeId, dueDate, prioritas } = req.body;
+
+    const task = await prisma.task.create({
+      data: {
+        title,
+        description: description || null,
+        assigneeId: assigneeId || null,
+        createdById: req.user.userId,
+        dueDate: dueDate ? new Date(dueDate) : null,
+        prioritas: prioritas || "NORMAL"   // ⭐ PRIORITAS DITAMBAHKAN
+      }
+    });
+
     logActivity(req.user?.userId, 'TASK_CREATE', { taskId: task.id }).catch?.(() => {});
     res.status(201).json(task);
+
   } catch (err) { next(err); }
 };
 
