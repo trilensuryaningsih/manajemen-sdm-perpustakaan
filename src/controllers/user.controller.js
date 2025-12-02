@@ -1,6 +1,112 @@
 const prisma = require('../prismaClient');
 const bcrypt = require('bcryptjs');
 
+// Helper: start of day
+const startOfDay = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+// Helper: start of month
+const startOfMonth = (d) => new Date(d.getFullYear(), d.getMonth(), 1);
+
+// =======================================
+// DASHBOARD USER
+// =======================================
+const getDashboard = async (req, res, next) => {
+	try {
+		const userId = req.user?.userId;
+		const now = new Date();
+		const today = startOfDay(now);
+		const endOfToday = new Date(today);
+		endOfToday.setDate(endOfToday.getDate() + 1);
+		
+		const startMonth = startOfMonth(now);
+		const endMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+
+		// 1. Hari Kehadiran Bulan Ini
+		const hariKehadiranBulanIni = await prisma.attendance.count({
+			where: {
+				userId,
+				date: {
+					gte: startMonth,
+					lte: endMonth
+				}
+			}
+		});
+
+		// 2. Laporan Dikirim (bulan ini)
+		const laporanDikirim = await prisma.dailyReport.count({
+			where: {
+				userId,
+				date: {
+					gte: startMonth,
+					lte: endMonth
+				}
+			}
+		});
+
+		// 3. Tingkat Penyelesaian (persentase kehadiran dari hari kerja di bulan ini)
+		// Asumsi: hari kerja = total hari dalam bulan dikurangi hari Minggu
+		const totalDaysInMonth = endMonth.getDate();
+		const tingkatPenyelesaian = totalDaysInMonth > 0 
+			? Math.round((hariKehadiranBulanIni / totalDaysInMonth) * 100) 
+			: 0;
+
+		// 4. Absensi Hari Ini (check-in & check-out)
+		const absensiHariIni = await prisma.attendance.findFirst({
+			where: {
+				userId,
+				date: {
+					gte: today,
+					lt: endOfToday
+				}
+			}
+		});
+
+		// 5. Tugas Saya (tugas yang ditugaskan ke user ini)
+		const tugasSaya = await prisma.task.findMany({
+			where: {
+				assigneeId: userId
+			},
+			include: {
+				createdBy: {
+					select: {
+						id: true,
+						name: true
+					}
+				}
+			},
+			orderBy: {
+				createdAt: 'desc'
+			},
+			take: 10
+		});
+
+		// 6. Aktivitas Hari Ini
+		const aktivitasHariIni = await prisma.activityLog.findMany({
+			where: {
+				userId,
+				createdAt: {
+					gte: today,
+					lt: endOfToday
+				}
+			},
+			orderBy: {
+				createdAt: 'desc'
+			},
+			take: 10
+		});
+
+		res.json({
+			hariKehadiranBulanIni,
+			laporanDikirim,
+			tingkatPenyelesaian,
+			absensiHariIni,
+			tugasSaya,
+			aktivitasHariIni
+		});
+	} catch (err) {
+		next(err);
+	}
+};
+
 const getProfile = async (req, res, next) => {
 	try {
 		const id = req.user?.userId;
@@ -37,4 +143,4 @@ const updateProfile = async (req, res, next) => {
 	} catch (err) { next(err); }
 };
 
-module.exports = { getProfile, changePassword, updateProfile };
+module.exports = { getDashboard, getProfile, changePassword, updateProfile };

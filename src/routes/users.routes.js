@@ -3,6 +3,9 @@ const router = express.Router();
 const { auth } = require('../middlewares/auth.middleware');
 const userCtrl = require('../controllers/user.controller');
 
+// dashboard
+router.get('/dashboard', auth, userCtrl.getDashboard);
+
 // profile
 router.get('/me', auth, userCtrl.getProfile);
 

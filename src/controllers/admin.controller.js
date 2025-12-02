@@ -12,28 +12,97 @@ const dashboard = async (req, res, next) => {
   try {
     const now = new Date();
     const today = startOfDay(now);
+    const endOfToday = new Date(today);
+    endOfToday.setDate(endOfToday.getDate() + 1);
 
-    const totalUsers = await prisma.user.count({
+    // 1. Total Karyawan (tidak termasuk admin)
+    const totalKaryawan = await prisma.user.count({
       where: {
         role: {
-          name: { not: 'ADMIN' } // admin tidak dihitung
+          name: { not: 'ADMIN' }
         }
       }
     });
 
-    const presentToday = await prisma.attendance.count({
-      where: { date: today }
+    // 2. Karyawan yang Hadir Hari Ini (sudah check-in)
+    const karyawanAktifHariIni = await prisma.attendance.count({
+      where: {
+        date: {
+          gte: today,
+          lt: endOfToday
+        }
+      }
     });
 
-    const tasksDoneToday = await prisma.task.count({
-      where: { status: 'DONE', updatedAt: { gte: today } }
+    // 3. Total Laporan Harian Hari Ini
+    const laporanHarian = await prisma.dailyReport.count({
+      where: {
+        date: {
+          gte: today,
+          lt: endOfToday
+        }
+      }
     });
 
-    const reportsToday = await prisma.dailyReport.count({
-      where: { date: today }
+    // 4. Tingkat Kehadiran (persentase)
+    const tingkatKehadiran = totalKaryawan > 0 
+      ? Math.round((karyawanAktifHariIni / totalKaryawan) * 100) 
+      : 0;
+
+    // 5. Absensi Hari Ini (detail dengan info user)
+    const absensiHariIni = await prisma.attendance.findMany({
+      where: {
+        date: {
+          gte: today,
+          lt: endOfToday
+        }
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            position: true,
+            email: true
+          }
+        }
+      },
+      orderBy: {
+        checkIn: 'asc'
+      }
     });
 
-    res.json({ totalUsers, presentToday, tasksDoneToday, reportsToday });
+    // 6. Tugas Terbaru (10 tugas terakhir)
+    const tugasTerbaru = await prisma.task.findMany({
+      take: 10,
+      include: {
+        assignee: {
+          select: {
+            id: true,
+            name: true,
+            email: true
+          }
+        },
+        createdBy: {
+          select: {
+            id: true,
+            name: true
+          }
+        }
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    });
+
+    res.json({
+      karyawanAktifHariIni,
+      laporanHarian,
+      tingkatKehadiran,
+      totalKaryawan,
+      absensiHariIni,
+      tugasTerbaru
+    });
   } catch (err) {
     next(err);
   }

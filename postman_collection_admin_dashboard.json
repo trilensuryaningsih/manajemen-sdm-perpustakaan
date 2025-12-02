@@ -1,0 +1,366 @@
+{
+	"info": {
+		"_postman_id": "admin-dashboard-test-001",
+		"name": "Admin Dashboard - Manajemen SDM",
+		"description": "Collection untuk testing endpoint Admin Dashboard",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "Login Admin",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Simpan token ke environment variable",
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.environment.set(\"auth_token\", jsonData.token);",
+									"    console.log(\"Token berhasil disimpan:\", jsonData.token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"admin@unand.ac.id\",\n  \"password\": \"Admin123!\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/auth/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"login"
+							]
+						},
+						"description": "Login sebagai admin untuk mendapatkan token JWT"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Admin Dashboard",
+			"item": [
+				{
+					"name": "Get Dashboard Data",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/admin/dashboard",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"dashboard"
+							]
+						},
+						"description": "Mendapatkan data dashboard admin:\n- Karyawan aktif hari ini\n- Laporan harian\n- Tingkat kehadiran (%)\n- Detail absensi hari ini\n- Tugas terbaru"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Task Statistics",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/admin/task-stats",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"task-stats"
+							]
+						},
+						"description": "Mendapatkan statistik tugas:\n- Pending (PENDING)\n- In Progress (DALAM_PROGERSS)\n- Selesai (SELESAI)\n- Terlambat"
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Users",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/admin/users?page=1&limit=20",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"users"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "20"
+								},
+								{
+									"key": "q",
+									"value": "",
+									"description": "Search query",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Mendapatkan daftar semua user dengan pagination"
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Tasks",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/admin/tasks",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"tasks"
+							],
+							"query": [
+								{
+									"key": "status",
+									"value": "PENDING",
+									"description": "Filter by status: PENDING, DALAM_PROGERSS, SELESAI",
+									"disabled": true
+								},
+								{
+									"key": "assigneeId",
+									"value": "1",
+									"description": "Filter by assignee user ID",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Mendapatkan daftar semua tugas dengan filter opsional"
+					},
+					"response": []
+				},
+				{
+					"name": "Export Attendance CSV",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/admin/export/attendance?format=csv",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"export",
+								"attendance"
+							],
+							"query": [
+								{
+									"key": "format",
+									"value": "csv",
+									"description": "Format: csv atau xlsx"
+								},
+								{
+									"key": "from",
+									"value": "2025-12-01",
+									"description": "Tanggal mulai (YYYY-MM-DD)",
+									"disabled": true
+								},
+								{
+									"key": "to",
+									"value": "2025-12-31",
+									"description": "Tanggal akhir (YYYY-MM-DD)",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Export data absensi dalam format CSV"
+					},
+					"response": []
+				},
+				{
+					"name": "Export Attendance XLSX",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/admin/export/attendance?format=xlsx",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"export",
+								"attendance"
+							],
+							"query": [
+								{
+									"key": "format",
+									"value": "xlsx",
+									"description": "Format: csv atau xlsx"
+								},
+								{
+									"key": "from",
+									"value": "2025-12-01",
+									"description": "Tanggal mulai (YYYY-MM-DD)",
+									"disabled": true
+								},
+								{
+									"key": "to",
+									"value": "2025-12-31",
+									"description": "Tanggal akhir (YYYY-MM-DD)",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Export data absensi dalam format Excel (XLSX)"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Test Data Setup",
+			"item": [
+				{
+					"name": "Create Test User (Karyawan)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Ahmad Fauzi\",\n  \"email\": \"ahmad.fauzi@unand.ac.id\",\n  \"password\": \"password123\",\n  \"role\": \"TENAGA\",\n  \"phone\": \"081234567890\",\n  \"position\": \"Pustakawan\",\n  \"alamat\": \"Padang, Sumatera Barat\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/admin/users",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"users"
+							]
+						},
+						"description": "Membuat user karyawan untuk testing"
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:4000",
+			"type": "string"
+		}
+	]
+}

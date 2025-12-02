@@ -1,0 +1,375 @@
+{
+	"info": {
+		"_postman_id": "user-dashboard-test-001",
+		"name": "User Dashboard - Manajemen SDM",
+		"description": "Collection untuk testing endpoint User Dashboard (Tenaga Kependidikan)",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "Login Admin (Setup)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Simpan token admin ke environment",
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.environment.set(\"admin_token\", jsonData.token);",
+									"    console.log(\"Admin token berhasil disimpan:\", jsonData.token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"admin@unand.ac.id\",\n  \"password\": \"Admin123!\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/auth/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"login"
+							]
+						},
+						"description": "Login sebagai admin untuk membuat user test"
+					},
+					"response": []
+				},
+				{
+					"name": "Login User (Karyawan)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Simpan token user ke environment",
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.environment.set(\"user_token\", jsonData.token);",
+									"    console.log(\"User token berhasil disimpan:\", jsonData.token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"ahmad.fauzi@unand.ac.id\",\n  \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/auth/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"login"
+							]
+						},
+						"description": "Login sebagai user karyawan untuk mengakses dashboard"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "User Dashboard",
+			"item": [
+				{
+					"name": "Get Dashboard Data",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{user_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/users/dashboard",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"dashboard"
+							]
+						},
+						"description": "Mendapatkan data dashboard user:\n- Hari kehadiran bulan ini\n- Laporan dikirim bulan ini\n- Tingkat penyelesaian (%)\n- Absensi hari ini (check-in/out)\n- Tugas saya\n- Aktivitas hari ini"
+					},
+					"response": []
+				},
+				{
+					"name": "Get User Profile",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{user_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/users/me",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"me"
+							]
+						},
+						"description": "Mendapatkan profil user yang sedang login"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Setup Test Data",
+			"item": [
+				{
+					"name": "Create Test User",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Ahmad Fauzi\",\n  \"email\": \"ahmad.fauzi@unand.ac.id\",\n  \"password\": \"password123\",\n  \"role\": \"TENAGA\",\n  \"phone\": \"081234567890\",\n  \"position\": \"Pustakawan\",\n  \"alamat\": \"Padang, Sumatera Barat\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/admin/users",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"users"
+							]
+						},
+						"description": "Membuat user test untuk dashboard (pakai token admin)"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Attendance for User",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{user_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"checkIn\": \"2025-12-02T08:15:00Z\",\n  \"location\": \"Kantor Perpustakaan UNAND\",\n  \"note\": \"Hadir tepat waktu\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/attendance/check-in",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"attendance",
+								"check-in"
+							]
+						},
+						"description": "Buat data absensi check-in untuk user"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Check-Out",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{user_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"checkOut\": \"2025-12-02T16:00:00Z\",\n  \"note\": \"Selesai kerja\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/attendance/check-out",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"attendance",
+								"check-out"
+							]
+						},
+						"description": "Buat data check-out untuk user"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Daily Report",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{user_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"date\": \"2025-12-02\",\n  \"note\": \"Menyelesaikan pembuatan laporan bulanan dan update database koleksi buku baru\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/reports",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"reports"
+							]
+						},
+						"description": "Buat laporan harian untuk user"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Task for User",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"Inventarisasi Buku Baru\",\n  \"description\": \"Melakukan inventarisasi terhadap 50 buku baru yang baru datang\",\n  \"assigneeId\": 3,\n  \"prioritas\": \"TINGGI\",\n  \"dueDate\": \"2025-12-20T23:59:59Z\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/tasks",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"tasks"
+							]
+						},
+						"description": "Buat tugas untuk user (ganti assigneeId sesuai ID user yang dibuat)"
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:4000",
+			"type": "string"
+		}
+	]
+}
