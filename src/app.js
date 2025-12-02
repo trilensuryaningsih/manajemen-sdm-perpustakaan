@@ -8,6 +8,7 @@ const attendanceRoutes = require('./routes/attendance.routes');
 const taskRoutes = require('./routes/tasks.routes');
 const reportRoutes = require('./routes/reports.routes');
 const adminRoutes = require('./routes/admin');
+const cutiRoutes = require('./routes/cuti.routes');
 const errorHandler = require('./middlewares/error.middleware');
 
 
@@ -27,6 +28,7 @@ app.use('/api/attendance', attendanceRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/cuti', cutiRoutes);
 
 
 
