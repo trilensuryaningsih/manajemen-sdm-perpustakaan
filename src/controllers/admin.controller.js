@@ -130,7 +130,7 @@ const createUser = async (req, res, next) => {
         name,
         email,
         password: hashed,
-        phone: phone || null,      // ⭐ phone disimpan
+        phone: phone || null,
         position: position || null,
         alamat: alamat || null,
         roleId: roleRecord.id
@@ -387,6 +387,48 @@ const exportAttendance = async (req, res, next) => {
 };
 
 // =======================================
+// GET TASK STATISTICS
+// =======================================
+const getTaskStats = async (req, res, next) => {
+  try {
+    const now = new Date();
+
+    // 1. Hitung Tugas Baru (Pending) - Sesuaikan status dengan ENUM di Prisma Schema
+    // Status di schema: BARU, SEDANG_DIKERJAKAN, SELESAI
+    const pending = await prisma.task.count({
+      where: { status: 'BARU' }
+    });
+
+    // 2. Hitung Sedang Dikerjakan (In Progress)
+    const progress = await prisma.task.count({
+      where: { status: 'SEDANG_DIKERJAKAN' }
+    });
+
+    // 3. Hitung Selesai (Done)
+    const done = await prisma.task.count({
+      where: { status: 'SELESAI' }
+    });
+
+    // 4. Hitung Terlambat (Belum selesai & melewati deadline)
+    const late = await prisma.task.count({
+      where: {
+        status: { not: 'SELESAI' },
+        dueDate: { lt: now } // lt = less than (sebelum waktu sekarang)
+      }
+    });
+
+    res.json({
+      pending,
+      progress,
+      done,
+      late
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// =======================================
 // EXPORT MODULE
 // =======================================
 module.exports = {
@@ -399,5 +441,6 @@ module.exports = {
   listTasks,
   updateTaskStatus,
   listActivity,
-  exportAttendance
+  exportAttendance,
+  getTaskStats
 };

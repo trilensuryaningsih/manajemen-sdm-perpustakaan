@@ -18,6 +18,7 @@ router.delete('/users/:id', adminCtrl.deleteUser);
 // Tasks
 router.get('/tasks', adminCtrl.listTasks);
 router.patch('/tasks/:id/status', adminCtrl.updateTaskStatus);
+router.get('/task-stats', adminCtrl.getTaskStats);
 
 // Activity
 router.get('/activity', adminCtrl.listActivity);
