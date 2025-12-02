@@ -63,7 +63,7 @@ model Task {
   assigneeId  Int?
   createdById Int
   createdBy   User      @relation("Creator", fields: [createdById], references: [id])
-  status      TaskStatus @default(BARU)
+  status      TaskStatus @default(PENDING)
   dueDate     DateTime?
   comments    TaskComment[]
   createdAt   DateTime  @default(now())
@@ -122,8 +122,8 @@ model Cuti {
 
 
 enum TaskStatus {
-  BARU
-  SEDANG_DIKERJAKAN
+  PENDING
+  DALAM_PROGERSS
   SELESAI
 }
 
