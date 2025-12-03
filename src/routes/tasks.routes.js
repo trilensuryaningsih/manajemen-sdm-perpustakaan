@@ -9,6 +9,12 @@ router.get('/', auth, taskCtrl.listForUser);
 // create task (permit TENAGA or ADMIN)
 router.post('/', auth, permit('ADMIN', 'TENAGA'), taskCtrl.createTask);
 
+// update full task details (Edit) - FITUR BARU
+router.put('/:id', auth, permit('ADMIN', 'TENAGA'), taskCtrl.updateTask);
+
+// delete task (Hapus) - FITUR BARU
+router.delete('/:id', auth, permit('ADMIN', 'TENAGA'), taskCtrl.deleteTask);
+
 // update task status (user or admin)
 router.patch('/:id/status', auth, taskCtrl.updateStatus);
 

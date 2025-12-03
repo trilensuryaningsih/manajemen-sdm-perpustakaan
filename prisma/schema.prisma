@@ -52,7 +52,6 @@ model Attendance {
   checkIn   DateTime
   checkOut  DateTime?
   note      String?
-  location  String?
 }
 
 model Task {
