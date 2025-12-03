@@ -456,24 +456,23 @@ const exportAttendance = async (req, res, next) => {
 };
 
 // =======================================
-// GET TASK STATISTICS
+// GET TASK STATISTICS (PERBAIKAN ENUM)
 // =======================================
 const getTaskStats = async (req, res, next) => {
   try {
     const now = new Date();
 
-    // 1. Hitung Tugas Baru (Pending) - Sesuaikan status dengan ENUM di Prisma Schema
-    // Status di schema: BARU, SEDANG_DIKERJAKAN, SELESAI
+    // 1. Hitung Tugas Baru (Pending) - Sesuaikan dengan ENUM DB: PENDING
     const pending = await prisma.task.count({
-      where: { status: 'BARU' }
+      where: { status: 'PENDING' }
     });
 
-    // 2. Hitung Sedang Dikerjakan (In Progress)
+    // 2. Hitung Sedang Dikerjakan (In Progress) - Sesuaikan dengan ENUM DB: DALAM_PROGERSS (Typo)
     const progress = await prisma.task.count({
-      where: { status: 'SEDANG_DIKERJAKAN' }
+      where: { status: 'DALAM_PROGERSS' }
     });
 
-    // 3. Hitung Selesai (Done)
+    // 3. Hitung Selesai (Done) - Sesuaikan dengan ENUM DB: SELESAI
     const done = await prisma.task.count({
       where: { status: 'SELESAI' }
     });
@@ -482,7 +481,7 @@ const getTaskStats = async (req, res, next) => {
     const late = await prisma.task.count({
       where: {
         status: { not: 'SELESAI' },
-        dueDate: { lt: now } // lt = less than (sebelum waktu sekarang)
+        dueDate: { lt: now } 
       }
     });
 
