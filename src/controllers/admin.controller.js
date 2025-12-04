@@ -170,7 +170,7 @@ const getUser = async (req, res, next) => {
 };
 
 // =======================================
-// CREATE USER (FIXED: POSITION & PHONE)
+// CREATE USER
 // =======================================
 const createUser = async (req, res, next) => {
   try {
@@ -200,7 +200,7 @@ const createUser = async (req, res, next) => {
         phone: phone || null,
         position: position || null,
         alamat: alamat || null,
-        statusKepegawaian: statusKepegawaian || null,  // NEW
+        statusKepegawaian: statusKepegawaian || null, 
         roleId: roleRecord.id
       }
     });
@@ -216,7 +216,7 @@ const createUser = async (req, res, next) => {
       phone: user.phone,
       position: user.position,
       alamat: user.alamat,
-      statusKepegawaian: user.statusKepegawaian  // NEW
+      statusKepegawaian: user.statusKepegawaian
     });
   } catch (err) {
     next(err);
@@ -224,7 +224,7 @@ const createUser = async (req, res, next) => {
 };
 
 // =======================================
-// UPDATE USER (FIXED: POSITION & PHONE)
+// UPDATE USER
 // =======================================
 const updateUser = async (req, res, next) => {
   try {
@@ -238,7 +238,7 @@ const updateUser = async (req, res, next) => {
     if (password) data.password = await bcrypt.hash(password, 10);
     if (phone !== undefined) data.phone = phone;
     if (position !== undefined) data.position = position;
-    if (statusKepegawaian !== undefined) data.statusKepegawaian = statusKepegawaian;  // NEW
+    if (statusKepegawaian !== undefined) data.statusKepegawaian = statusKepegawaian;
 
     if (role) {
       let roleRecord = await prisma.role.findUnique({
@@ -267,7 +267,7 @@ const updateUser = async (req, res, next) => {
       email: updated.email,
       phone: updated.phone,
       position: updated.position,
-      statusKepegawaian: updated.statusKepegawaian  // NEW
+      statusKepegawaian: updated.statusKepegawaian
     });
   } catch (err) {
     next(err);
@@ -296,11 +296,6 @@ const deleteUser = async (req, res, next) => {
 // =======================================
 // LIST TASKS
 // =======================================
-// ... kode sebelumnya ...
-
-// =======================================
-// LIST TASKS
-// =======================================
 const listTasks = async (req, res, next) => {
   try {
     const { status, assigneeId } = req.query;
@@ -314,10 +309,9 @@ const listTasks = async (req, res, next) => {
       include: { 
         assignee: true, 
         createdBy: true,
-        // TAMBAHKAN BARIS INI: Include comments beserta author-nya
         comments: {
             include: { author: true },
-            orderBy: { createdAt: 'desc' } // Urutkan dari yang terbaru
+            orderBy: { createdAt: 'desc' } 
         } 
       },
       orderBy: { updatedAt: 'desc' }
@@ -328,8 +322,6 @@ const listTasks = async (req, res, next) => {
     next(err);
   }
 };
-
-// ... kode setelahnya ...
 
 // =======================================
 // UPDATE TASK STATUS
@@ -470,28 +462,24 @@ const exportAttendance = async (req, res, next) => {
 };
 
 // =======================================
-// GET TASK STATISTICS (PERBAIKAN ENUM)
+// GET TASK STATISTICS
 // =======================================
 const getTaskStats = async (req, res, next) => {
   try {
     const now = new Date();
 
-    // 1. Hitung Tugas Baru (Pending) - Sesuaikan dengan ENUM DB: PENDING
     const pending = await prisma.task.count({
       where: { status: 'PENDING' }
     });
 
-    // 2. Hitung Sedang Dikerjakan (In Progress) - Sesuaikan dengan ENUM DB: DALAM_PROGERSS (Typo)
     const progress = await prisma.task.count({
       where: { status: 'DALAM_PROGERSS' }
     });
 
-    // 3. Hitung Selesai (Done) - Sesuaikan dengan ENUM DB: SELESAI
     const done = await prisma.task.count({
       where: { status: 'SELESAI' }
     });
 
-    // 4. Hitung Terlambat (Belum selesai & melewati deadline)
     const late = await prisma.task.count({
       where: {
         status: { not: 'SELESAI' },
@@ -511,7 +499,7 @@ const getTaskStats = async (req, res, next) => {
 };
 
 // =======================================
-// LAPORAN & REKAP (ADMIN)
+// LAPORAN & REKAP (ADMIN) - FIXED LOGIC
 // =======================================
 const getLaporanRekap = async (req, res, next) => {
   try {
@@ -533,8 +521,10 @@ const getLaporanRekap = async (req, res, next) => {
     });
 
     const totalUsers = users.length;
+    const totalDaysInMonth = endMonth.getDate();
+    const expectedAttendance = totalUsers * totalDaysInMonth; // Total hari potensial untuk semua karyawan
 
-    // 1. ANALISIS PRODUKTIVITAS ABSENSI (Bulan Ini)
+    // 1. DATA HADIR (GLOBAL)
     const totalAttendanceThisMonth = await prisma.attendance.count({
       where: {
         date: {
@@ -544,161 +534,138 @@ const getLaporanRekap = async (req, res, next) => {
       }
     });
 
-    const totalDaysInMonth = endMonth.getDate();
-    const expectedAttendance = totalUsers * totalDaysInMonth;
-    
-    const rataRataHadir = expectedAttendance > 0 
-      ? Math.round((totalAttendanceThisMonth / expectedAttendance) * 100) 
-      : 0;
-
-    // 2. STATISTIK DETAIL
-    // Buat reference time untuk jam 08:30
-    const checkInLimit = new Date();
-    checkInLimit.setHours(8, 30, 0, 0);
-
-    // Kehadiran Tepat Waktu (check-in sebelum 08:30)
-    const attendanceRecords = await prisma.attendance.findMany({
-      where: {
-        date: {
-          gte: startMonth,
-          lte: endMonth
+    // 2. DATA CUTI (GLOBAL - HITUNG HARI)
+    // Ambil semua cuti yang disetujui bulan ini
+    const approvedCutiList = await prisma.cuti.findMany({
+        where: {
+            status: 'DISETUJUI',
+            AND: [
+                { tanggalMulai: { lte: endMonth } },
+                { tanggalSelesai: { gte: startMonth } }
+            ]
         }
-      },
-      select: {
-        checkIn: true
-      }
+    });
+
+    let totalHariCuti = 0;
+    approvedCutiList.forEach(c => {
+        // Clamp tanggal agar tidak keluar dari bulan ini
+        let start = c.tanggalMulai < startMonth ? startMonth : c.tanggalMulai;
+        let end = c.tanggalSelesai > endMonth ? endMonth : c.tanggalSelesai;
+        
+        // Normalisasi jam ke 00:00 untuk hitung selisih hari
+        start = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+        end = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+
+        const diffTime = Math.abs(end - start);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 karena inklusif
+        totalHariCuti += diffDays;
+    });
+
+    // 3. DATA ABSEN (GLOBAL)
+    // Rumus: Total Potensial - Hadir - Total Hari Cuti
+    let totalAbsen = expectedAttendance - totalAttendanceThisMonth - totalHariCuti;
+    if (totalAbsen < 0) totalAbsen = 0; // Safety check
+
+    // --- Hitung Persentase ---
+    const denominator = expectedAttendance > 0 ? expectedAttendance : 1;
+    
+    const rataRataHadir = Math.round((totalAttendanceThisMonth / denominator) * 100);
+    const persenCuti = Math.round((totalHariCuti / denominator) * 100);
+    const persenAbsen = Math.round((totalAbsen / denominator) * 100);
+
+    // Detail Tepat Waktu vs Terlambat (untuk legend)
+    const attendanceRecords = await prisma.attendance.findMany({
+      where: { date: { gte: startMonth, lte: endMonth } },
+      select: { checkIn: true }
     });
 
     let tepatWaktu = 0;
     let terlambat = 0;
-    
-    attendanceRecords.forEach(record => {
-      const checkInTime = new Date(record.checkIn);
-      const checkInHour = checkInTime.getHours();
-      const checkInMinute = checkInTime.getMinutes();
-      
-      // Check if before 08:30
-      if (checkInHour < 8 || (checkInHour === 8 && checkInMinute <= 30)) {
+    attendanceRecords.forEach(r => {
+      const d = new Date(r.checkIn);
+      if (d.getHours() < 8 || (d.getHours() === 8 && d.getMinutes() <= 30)) {
         tepatWaktu++;
       } else {
         terlambat++;
       }
     });
+    const persenTepatWaktu = Math.round((tepatWaktu / denominator) * 100);
+    const persenTerlambat = Math.round((terlambat / denominator) * 100);
 
-    // Absen (tidak ada attendance record)
-    const totalAbsen = expectedAttendance - totalAttendanceThisMonth;
 
-    // Cuti (status DISETUJUI bulan ini)
-    const totalCuti = await prisma.cuti.count({
-      where: {
-        status: 'DISETUJUI',
-        tanggalMulai: {
-          gte: startMonth,
-          lte: endMonth
-        }
-      }
-    });
-
-    const persenTepatWaktu = totalAttendanceThisMonth > 0 
-      ? Math.round((tepatWaktu / totalAttendanceThisMonth) * 100) 
-      : 0;
-    const persenTerlambat = totalAttendanceThisMonth > 0 
-      ? Math.round((terlambat / totalAttendanceThisMonth) * 100) 
-      : 0;
-    const persenAbsen = expectedAttendance > 0 
-      ? Math.round((totalAbsen / expectedAttendance) * 100) 
-      : 0;
-    const persenCuti = expectedAttendance > 0 
-      ? Math.round((totalCuti / expectedAttendance) * 100) 
-      : 0;
-
-    // 3. REKAP ABSENSI PER KARYAWAN
+    // 4. REKAP ABSENSI PER KARYAWAN (DETAIL)
     const rekapAbsensi = [];
     for (const user of users) {
+      // Hadir
       const userAttendance = await prisma.attendance.findMany({
         where: {
           userId: user.id,
-          date: {
-            gte: startMonth,
-            lte: endMonth
-          }
+          date: { gte: startMonth, lte: endMonth }
         },
-        select: {
-          checkIn: true
-        }
+        select: { checkIn: true }
       });
-
       const hadir = userAttendance.length;
-      
+
+      // Terlambat
       let terlambatUser = 0;
-      userAttendance.forEach(record => {
-        const checkInTime = new Date(record.checkIn);
-        const checkInHour = checkInTime.getHours();
-        const checkInMinute = checkInTime.getMinutes();
-        
-        if (checkInHour > 8 || (checkInHour === 8 && checkInMinute > 30)) {
+      userAttendance.forEach(r => {
+        const d = new Date(r.checkIn);
+        if (d.getHours() > 8 || (d.getHours() === 8 && d.getMinutes() > 30)) {
           terlambatUser++;
         }
       });
 
-      const cutiUser = await prisma.cuti.count({
+      // Cuti (Hitung Hari per User)
+      const userCutiList = await prisma.cuti.findMany({
         where: {
           userId: user.id,
           status: 'DISETUJUI',
-          tanggalMulai: {
-            gte: startMonth,
-            lte: endMonth
-          }
+          AND: [
+            { tanggalMulai: { lte: endMonth } },
+            { tanggalSelesai: { gte: startMonth } }
+          ]
         }
       });
 
-      const absenUser = totalDaysInMonth - hadir;
+      let cutiHariUser = 0;
+      userCutiList.forEach(c => {
+        let start = c.tanggalMulai < startMonth ? startMonth : c.tanggalMulai;
+        let end = c.tanggalSelesai > endMonth ? endMonth : c.tanggalSelesai;
+        start = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+        end = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+        cutiHariUser += (Math.ceil(Math.abs(end - start) / (1000 * 60 * 60 * 24)) + 1);
+      });
+
+      // Absen User
+      // Rumus: Total Hari Bulan Ini - Hadir - Hari Cuti
+      let absenUser = totalDaysInMonth - hadir - cutiHariUser;
+      if (absenUser < 0) absenUser = 0;
 
       rekapAbsensi.push({
         karyawan: user.name,
         hadir,
         terlambat: terlambatUser,
-        absen: absenUser,
-        cuti: cutiUser
+        absen: absenUser,    // Sekarang sudah dikurangi cuti
+        cuti: cutiHariUser   // Menampilkan jumlah hari cuti
       });
     }
 
-    // 4. REKAP PENYELESAIAN TUGAS PER KARYAWAN
+    // 5. REKAP TUGAS
     const rekapTugas = [];
     for (const user of users) {
-      const totalTugas = await prisma.task.count({
-        where: {
-          assigneeId: user.id
-        }
-      });
-
-      const tugasSelesai = await prisma.task.count({
-        where: {
-          assigneeId: user.id,
-          status: 'SELESAI'
-        }
-      });
-
+      const totalTugas = await prisma.task.count({ where: { assigneeId: user.id } });
+      const tugasSelesai = await prisma.task.count({ where: { assigneeId: user.id, status: 'SELESAI' } });
       const tugasAktif = totalTugas - tugasSelesai;
-      const persenSelesai = totalTugas > 0 
-        ? Math.round((tugasSelesai / totalTugas) * 100) 
-        : 0;
-
-      rekapTugas.push({
-        karyawan: user.name,
-        selesaiPersen: persenSelesai,
-        tugasAktif
-      });
+      const persenSelesai = totalTugas > 0 ? Math.round((tugasSelesai / totalTugas) * 100) : 0;
+      rekapTugas.push({ karyawan: user.name, selesaiPersen: persenSelesai, tugasAktif });
     }
 
     res.json({
-      analisisProduktivitas: {
-        rataRataHadir
-      },
+      analisisProduktivitas: { rataRataHadir },
       statistikDetail: {
         kehadiranTepatWaktu: persenTepatWaktu,
         terlambat: persenTerlambat,
-        absen: persenAbsen,
+        absen: persenAbsen, // Sekarang persen ini sudah bersih dari cuti
         cuti: persenCuti
       },
       rekapAbsensi,
