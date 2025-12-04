@@ -86,9 +86,29 @@ const rejectCuti = async (req, res, next) => {
   }
 };
 
+// =========================
+// ADMIN LIHAT SEMUA CUTI
+// =========================
+const listAllCuti = async (req, res, next) => {
+  try {
+    const cuti = await prisma.cuti.findMany({
+      include: {
+        user: {
+          select: { name: true, email: true } // Ambil nama user
+        }
+      },
+      orderBy: { id: "desc" }
+    });
+    res.json(cuti);
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   createCuti,
   listMyCuti,
+  listAllCuti,
   approveCuti,
   rejectCuti
 };

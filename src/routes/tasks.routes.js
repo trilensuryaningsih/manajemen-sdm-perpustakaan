@@ -18,4 +18,7 @@ router.delete('/:id', auth, permit('ADMIN', 'TENAGA'), taskCtrl.deleteTask);
 // update task status (user or admin)
 router.patch('/:id/status', auth, taskCtrl.updateStatus);
 
+// --- ROUTE BARU: TAMBAH KOMENTAR ---
+router.post('/:id/note', auth, taskCtrl.saveTaskNote);
+
 module.exports = router;

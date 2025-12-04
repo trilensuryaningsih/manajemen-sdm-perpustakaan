@@ -1,21 +1,64 @@
 const prisma = require('../prismaClient');
 const { logActivity } = require('../services/activity.service');
 
+// ... (Kode listForUser yang lama diubah sedikit untuk include comments)
 const listForUser = async (req, res, next) => {
   try {
     const userId = req.user.userId;
-    // Tampilkan tugas dimana user adalah pembuat ATAU penerima tugas
     const tasks = await prisma.task.findMany({ 
       where: { 
         OR: [{ assigneeId: userId }, { createdById: userId }] 
       }, 
       include: { 
         assignee: true, 
-        createdBy: true 
+        createdBy: true,
+        comments: { include: { author: true } } // Include comments untuk dicek di FE
       }, 
       orderBy: { updatedAt: 'desc' } 
     });
     res.json(tasks);
+  } catch (err) { next(err); }
+};
+
+
+// --- FUNGSI BARU: TAMBAH KOMENTAR ---
+const saveTaskNote = async (req, res, next) => {
+  try {
+    const taskId = parseInt(req.params.id);
+    const { text } = req.body; // Isi catatan dikirim sebagai 'text'
+    const authorId = req.user.userId;
+
+    if (!text) return res.status(400).json({ message: "Catatan tidak boleh kosong" });
+
+    // 1. Cek apakah user ini sudah punya komentar di tugas ini?
+    const existingComment = await prisma.taskComment.findFirst({
+        where: {
+            taskId: taskId,
+            authorId: authorId
+        }
+    });
+
+    let result;
+    if (existingComment) {
+        // UPDATE (Jika sudah ada)
+        result = await prisma.taskComment.update({
+            where: { id: existingComment.id },
+            data: { text: text } // Update teksnya
+        });
+    } else {
+        // CREATE (Jika belum ada)
+        result = await prisma.taskComment.create({
+            data: {
+                taskId,
+                authorId,
+                text
+            }
+        });
+    }
+
+    logActivity(req.user?.userId, 'TASK_NOTE_SAVE', { taskId }).catch(() => {});
+    res.json(result);
+
   } catch (err) { next(err); }
 };
 
@@ -108,5 +151,6 @@ module.exports = {
   createTask, 
   updateStatus, 
   updateTask, // <-- Tambahan
-  deleteTask  // <-- Tambahan
+  deleteTask,  // <-- Tambahan
+  saveTaskNote
 };
