@@ -297,6 +297,11 @@ const deleteUser = async (req, res, next) => {
 // =======================================
 // LIST TASKS
 // =======================================
+// ... kode sebelumnya ...
+
+// =======================================
+// LIST TASKS
+// =======================================
 const listTasks = async (req, res, next) => {
   try {
     const { status, assigneeId } = req.query;
@@ -307,7 +312,15 @@ const listTasks = async (req, res, next) => {
 
     const tasks = await prisma.task.findMany({
       where,
-      include: { assignee: true, createdBy: true },
+      include: { 
+        assignee: true, 
+        createdBy: true,
+        // TAMBAHKAN BARIS INI: Include comments beserta author-nya
+        comments: {
+            include: { author: true },
+            orderBy: { createdAt: 'desc' } // Urutkan dari yang terbaru
+        } 
+      },
       orderBy: { updatedAt: 'desc' }
     });
 
@@ -316,6 +329,8 @@ const listTasks = async (req, res, next) => {
     next(err);
   }
 };
+
+// ... kode setelahnya ...
 
 // =======================================
 // UPDATE TASK STATUS
