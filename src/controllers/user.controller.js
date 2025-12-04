@@ -42,11 +42,31 @@ const getDashboard = async (req, res, next) => {
             }
         });
 
-        // 3. Tingkat Penyelesaian (persentase kehadiran dari hari kerja di bulan ini)
-        const totalDaysInMonth = endMonth.getDate();
-        const tingkatPenyelesaian = totalDaysInMonth > 0 
-            ? Math.round((hariKehadiranBulanIni / totalDaysInMonth) * 100) 
-            : 0;
+        // 3. Tingkat Penyelesaian (persentase penyelesaian tugas oleh user di bulan ini)
+		// Dihitung sebagai: completed tasks this month / total tasks assigned this month
+		const tasksAssignedThisMonth = await prisma.task.count({
+			where: {
+				assigneeId: userId,
+				createdAt: {
+					gte: startMonth,
+					lte: endMonth
+				}
+			}
+		});
+		const tasksCompletedThisMonth = await prisma.task.count({
+			where: {
+				assigneeId: userId,
+				status: 'SELESAI',
+				updatedAt: {
+					gte: startMonth,
+					lte: endMonth
+				}
+			}
+		});
+		const tingkatPenyelesaian = tasksAssignedThisMonth > 0
+			? Math.round((tasksCompletedThisMonth / tasksAssignedThisMonth) * 100)
+			: 0;
+
 
         // 4. Absensi Hari Ini (check-in & check-out)
         const absensiHariIni = await prisma.attendance.findFirst({

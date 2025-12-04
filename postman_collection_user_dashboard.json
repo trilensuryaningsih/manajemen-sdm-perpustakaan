@@ -106,6 +106,21 @@
 			"item": [
 				{
 					"name": "Get Dashboard Data",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+									"const json = pm.response.json();",
+									"pm.test('Response has tingkatPenyelesaian', function () { pm.expect(json).to.have.property('tingkatPenyelesaian'); });",
+									"pm.test('tingkatPenyelesaian is number between 0 and 100', function () { pm.expect(json.tingkatPenyelesaian).to.be.a('number'); pm.expect(json.tingkatPenyelesaian).to.be.within(0,100); });",
+									"console.log('tingkatPenyelesaian:', json.tingkatPenyelesaian);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
 					"request": {
 						"auth": {
 							"type": "bearer",
