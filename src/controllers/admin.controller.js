@@ -497,6 +497,205 @@ const getTaskStats = async (req, res, next) => {
 };
 
 // =======================================
+// LAPORAN & REKAP (ADMIN)
+// =======================================
+const getLaporanRekap = async (req, res, next) => {
+  try {
+    const now = new Date();
+    const startMonth = startOfDay(new Date(now.getFullYear(), now.getMonth(), 1));
+    const endMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+
+    // Get all non-admin users
+    const users = await prisma.user.findMany({
+      where: {
+        role: {
+          name: { not: 'ADMIN' }
+        }
+      },
+      select: {
+        id: true,
+        name: true
+      }
+    });
+
+    const totalUsers = users.length;
+
+    // 1. ANALISIS PRODUKTIVITAS ABSENSI (Bulan Ini)
+    const totalAttendanceThisMonth = await prisma.attendance.count({
+      where: {
+        date: {
+          gte: startMonth,
+          lte: endMonth
+        }
+      }
+    });
+
+    const totalDaysInMonth = endMonth.getDate();
+    const expectedAttendance = totalUsers * totalDaysInMonth;
+    
+    const rataRataHadir = expectedAttendance > 0 
+      ? Math.round((totalAttendanceThisMonth / expectedAttendance) * 100) 
+      : 0;
+
+    // 2. STATISTIK DETAIL
+    // Buat reference time untuk jam 08:30
+    const checkInLimit = new Date();
+    checkInLimit.setHours(8, 30, 0, 0);
+
+    // Kehadiran Tepat Waktu (check-in sebelum 08:30)
+    const attendanceRecords = await prisma.attendance.findMany({
+      where: {
+        date: {
+          gte: startMonth,
+          lte: endMonth
+        }
+      },
+      select: {
+        checkIn: true
+      }
+    });
+
+    let tepatWaktu = 0;
+    let terlambat = 0;
+    
+    attendanceRecords.forEach(record => {
+      const checkInTime = new Date(record.checkIn);
+      const checkInHour = checkInTime.getHours();
+      const checkInMinute = checkInTime.getMinutes();
+      
+      // Check if before 08:30
+      if (checkInHour < 8 || (checkInHour === 8 && checkInMinute <= 30)) {
+        tepatWaktu++;
+      } else {
+        terlambat++;
+      }
+    });
+
+    // Absen (tidak ada attendance record)
+    const totalAbsen = expectedAttendance - totalAttendanceThisMonth;
+
+    // Cuti (status DISETUJUI bulan ini)
+    const totalCuti = await prisma.cuti.count({
+      where: {
+        status: 'DISETUJUI',
+        tanggalMulai: {
+          gte: startMonth,
+          lte: endMonth
+        }
+      }
+    });
+
+    const persenTepatWaktu = totalAttendanceThisMonth > 0 
+      ? Math.round((tepatWaktu / totalAttendanceThisMonth) * 100) 
+      : 0;
+    const persenTerlambat = totalAttendanceThisMonth > 0 
+      ? Math.round((terlambat / totalAttendanceThisMonth) * 100) 
+      : 0;
+    const persenAbsen = expectedAttendance > 0 
+      ? Math.round((totalAbsen / expectedAttendance) * 100) 
+      : 0;
+    const persenCuti = expectedAttendance > 0 
+      ? Math.round((totalCuti / expectedAttendance) * 100) 
+      : 0;
+
+    // 3. REKAP ABSENSI PER KARYAWAN
+    const rekapAbsensi = [];
+    for (const user of users) {
+      const userAttendance = await prisma.attendance.findMany({
+        where: {
+          userId: user.id,
+          date: {
+            gte: startMonth,
+            lte: endMonth
+          }
+        },
+        select: {
+          checkIn: true
+        }
+      });
+
+      const hadir = userAttendance.length;
+      
+      let terlambatUser = 0;
+      userAttendance.forEach(record => {
+        const checkInTime = new Date(record.checkIn);
+        const checkInHour = checkInTime.getHours();
+        const checkInMinute = checkInTime.getMinutes();
+        
+        if (checkInHour > 8 || (checkInHour === 8 && checkInMinute > 30)) {
+          terlambatUser++;
+        }
+      });
+
+      const cutiUser = await prisma.cuti.count({
+        where: {
+          userId: user.id,
+          status: 'DISETUJUI',
+          tanggalMulai: {
+            gte: startMonth,
+            lte: endMonth
+          }
+        }
+      });
+
+      const absenUser = totalDaysInMonth - hadir;
+
+      rekapAbsensi.push({
+        karyawan: user.name,
+        hadir,
+        terlambat: terlambatUser,
+        absen: absenUser,
+        cuti: cutiUser
+      });
+    }
+
+    // 4. REKAP PENYELESAIAN TUGAS PER KARYAWAN
+    const rekapTugas = [];
+    for (const user of users) {
+      const totalTugas = await prisma.task.count({
+        where: {
+          assigneeId: user.id
+        }
+      });
+
+      const tugasSelesai = await prisma.task.count({
+        where: {
+          assigneeId: user.id,
+          status: 'SELESAI'
+        }
+      });
+
+      const tugasAktif = totalTugas - tugasSelesai;
+      const persenSelesai = totalTugas > 0 
+        ? Math.round((tugasSelesai / totalTugas) * 100) 
+        : 0;
+
+      rekapTugas.push({
+        karyawan: user.name,
+        selesaiPersen: persenSelesai,
+        tugasAktif
+      });
+    }
+
+    res.json({
+      analisisProduktivitas: {
+        rataRataHadir
+      },
+      statistikDetail: {
+        kehadiranTepatWaktu: persenTepatWaktu,
+        terlambat: persenTerlambat,
+        absen: persenAbsen,
+        cuti: persenCuti
+      },
+      rekapAbsensi,
+      rekapPenyelesaianTugas: rekapTugas
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// =======================================
 // EXPORT MODULE
 // =======================================
 module.exports = {
@@ -510,5 +709,6 @@ module.exports = {
   updateTaskStatus,
   listActivity,
   exportAttendance,
-  getTaskStats
+  getTaskStats,
+  getLaporanRekap
 };

@@ -25,5 +25,8 @@ router.get('/activity', adminCtrl.listActivity);
 
 // Exports
 router.get('/export/attendance', adminCtrl.exportAttendance);
+
+// Laporan & Rekap
+router.get('/laporan-rekap', adminCtrl.getLaporanRekap);
     
 module.exports = router;

@@ -1,0 +1,262 @@
+{
+	"info": {
+		"_postman_id": "laporan-rekap-test-001",
+		"name": "Laporan & Rekap Admin - Manajemen SDM",
+		"description": "Collection untuk testing endpoint Laporan & Rekap (Admin Panel)",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "Login Admin",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.environment.set(\"auth_token\", jsonData.token);",
+									"    console.log(\"Token berhasil disimpan:\", jsonData.token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"admin@unand.ac.id\",\n  \"password\": \"Admin123!\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/auth/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"login"
+							]
+						},
+						"description": "Login sebagai admin untuk mengakses laporan"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Laporan & Rekap (Admin)",
+			"item": [
+				{
+					"name": "Get Laporan Rekap",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const json = pm.response.json();",
+									"",
+									"pm.test('Response has analisisProduktivitas', function () {",
+									"    pm.expect(json).to.have.property('analisisProduktivitas');",
+									"    pm.expect(json.analisisProduktivitas).to.have.property('rataRataHadir');",
+									"});",
+									"",
+									"pm.test('Response has statistikDetail', function () {",
+									"    pm.expect(json).to.have.property('statistikDetail');",
+									"    pm.expect(json.statistikDetail).to.have.property('kehadiranTepatWaktu');",
+									"    pm.expect(json.statistikDetail).to.have.property('terlambat');",
+									"    pm.expect(json.statistikDetail).to.have.property('absen');",
+									"    pm.expect(json.statistikDetail).to.have.property('cuti');",
+									"});",
+									"",
+									"pm.test('Response has rekapAbsensi', function () {",
+									"    pm.expect(json).to.have.property('rekapAbsensi');",
+									"    pm.expect(json.rekapAbsensi).to.be.an('array');",
+									"});",
+									"",
+									"pm.test('Response has rekapPenyelesaianTugas', function () {",
+									"    pm.expect(json).to.have.property('rekapPenyelesaianTugas');",
+									"    pm.expect(json.rekapPenyelesaianTugas).to.be.an('array');",
+									"});",
+									"",
+									"console.log('Rata-rata Hadir:', json.analisisProduktivitas.rataRataHadir + '%');",
+									"console.log('Statistik:', json.statistikDetail);",
+									"console.log('Total Karyawan:', json.rekapAbsensi.length);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/admin/laporan-rekap",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"laporan-rekap"
+							]
+						},
+						"description": "Mendapatkan data laporan dan rekap (ADMIN ONLY):\n- Analisis Produktivitas Absensi (rata-rata hadir)\n- Statistik Detail (tepat waktu, terlambat, absen, cuti)\n- Rekap Absensi per Karyawan\n- Rekap Penyelesaian Tugas per Karyawan"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Setup Test Data",
+			"item": [
+				{
+					"name": "Create User 1",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Ahmad Fauzi\",\n  \"email\": \"ahmad.fauzi@unand.ac.id\",\n  \"password\": \"password123\",\n  \"role\": \"TENAGA\",\n  \"phone\": \"081234567890\",\n  \"position\": \"Pustakawan\",\n  \"alamat\": \"Padang\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/admin/users",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"users"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create User 2",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Siti Rahma\",\n  \"email\": \"siti.rahma@unand.ac.id\",\n  \"password\": \"password123\",\n  \"role\": \"TENAGA\",\n  \"phone\": \"082345678901\",\n  \"position\": \"Admin Perpus\",\n  \"alamat\": \"Padang\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/admin/users",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"users"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create User 3",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Budi Santoso\",\n  \"email\": \"budi.santoso@unand.ac.id\",\n  \"password\": \"password123\",\n  \"role\": \"TENAGA\",\n  \"phone\": \"083456789012\",\n  \"position\": \"Petugas Sirkulasi\",\n  \"alamat\": \"Padang\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/admin/users",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"users"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:4000",
+			"type": "string"
+		}
+	]
+}
