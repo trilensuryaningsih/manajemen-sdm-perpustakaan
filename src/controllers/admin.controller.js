@@ -174,15 +174,13 @@ const getUser = async (req, res, next) => {
 // =======================================
 const createUser = async (req, res, next) => {
   try {
-    const { name, email, password, role, phone, position, alamat } = req.body;
+    const { name, email, password, role, phone, position, alamat, statusKepegawaian } = req.body;
 
-    // hash password (kalau kosong, default "password")
+    // hash password
     const hashed = await bcrypt.hash(password || 'password', 10);
 
-    // role sistem: default "TENAGA" jika tidak dikirim dari FE
     const roleName = role || 'TENAGA';
 
-    // pastikan role ada di tabel role
     let roleRecord = await prisma.role.findUnique({
       where: { name: roleName }
     });
@@ -193,7 +191,7 @@ const createUser = async (req, res, next) => {
       });
     }
 
-    // buat user baru dengan phone & position disimpan di tabel user
+    // buat user dengan statusKepegawaian
     const user = await prisma.user.create({
       data: {
         name,
@@ -202,11 +200,11 @@ const createUser = async (req, res, next) => {
         phone: phone || null,
         position: position || null,
         alamat: alamat || null,
+        statusKepegawaian: statusKepegawaian || null,  // NEW
         roleId: roleRecord.id
       }
     });
 
-    // log aktivitas (non-blocking)
     logActivity(req.user?.userId, 'USER_CREATE', {
       targetUserId: user.id
     }).catch(() => {});
@@ -217,7 +215,8 @@ const createUser = async (req, res, next) => {
       email: user.email,
       phone: user.phone,
       position: user.position,
-      alamat: user.alamat
+      alamat: user.alamat,
+      statusKepegawaian: user.statusKepegawaian  // NEW
     });
   } catch (err) {
     next(err);
@@ -230,17 +229,16 @@ const createUser = async (req, res, next) => {
 const updateUser = async (req, res, next) => {
   try {
     const id = parseInt(req.params.id);
-    const { name, email, password, role, phone, position } = req.body;
+    const { name, email, password, role, phone, position, statusKepegawaian } = req.body;
 
     const data = {};
 
     if (name) data.name = name;
     if (email) data.email = email;
     if (password) data.password = await bcrypt.hash(password, 10);
-
-    // Tambahan phone dan position
     if (phone !== undefined) data.phone = phone;
     if (position !== undefined) data.position = position;
+    if (statusKepegawaian !== undefined) data.statusKepegawaian = statusKepegawaian;  // NEW
 
     if (role) {
       let roleRecord = await prisma.role.findUnique({
@@ -268,7 +266,8 @@ const updateUser = async (req, res, next) => {
       name: updated.name,
       email: updated.email,
       phone: updated.phone,
-      position: updated.position
+      position: updated.position,
+      statusKepegawaian: updated.statusKepegawaian  // NEW
     });
   } catch (err) {
     next(err);

@@ -29,6 +29,8 @@ model User {
   joinDate   DateTime? // Tanggal Bergabung (Boleh kosong)
   // ----------------------------------
 
+  statusKepegawaian   StatusKepegawaian?  // NEW: PNS, PTT, PHL
+
   createdAt  DateTime  @default(now())
   attendance Attendance[]
   reports    DailyReport[]
@@ -154,5 +156,11 @@ enum AttendanceStatus {
   HADIR_TEPAT_WAKTU // Untuk menghitung Hadir (Hadir)
   TERLAMBAT       // Untuk menghitung Terlambat (Terlambat)
   ABSEN           // Untuk menghitung Absen (Absen)            // Jika ada status Izin
+}
+
+enum StatusKepegawaian {
+  PNS   
+  PTT   
+  PHL   
 }
 
