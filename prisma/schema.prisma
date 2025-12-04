@@ -52,6 +52,11 @@ model Attendance {
   checkIn   DateTime
   checkOut  DateTime?
   note      String?
+
+  // KOLOM BARU UNTUK LAPORAN & REKAP
+  statusAbsen AttendanceStatus?   // Status setelah diverifikasi: HADIR_TEPAT_WAKTU, TERLAMBAT, ABSEN
+  
+  @@unique([userId, date]) // Mencegah duplikasi absensi pada hari yang sama
 }
 
 model Task {
@@ -65,6 +70,10 @@ model Task {
   status      TaskStatus @default(PENDING)
   dueDate     DateTime?
   comments    TaskComment[]
+
+// KOLOM BARU UNTUK REKAP PENYELESAIAN TUGAS
+  completion_percent  Int     @default(0) // Persentase penyelesaian (0-100)
+
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   prioritas   prioritas @default(NORMAL)
@@ -117,6 +126,9 @@ model Cuti {
   user              User?    @relation(fields: [userId], references: [id])
   userId            Int?
 
+  // KOLOM BARU (Opsional, untuk audit)
+  approverId      Int?        // Admin yang menyetujui/menolak
+
 }
 
 
@@ -137,4 +149,10 @@ enum StatusCuti {
   DITOLAK
 }
 
+// ENUM BARU UNTUK REKAP ABSENSI
+enum AttendanceStatus {
+  HADIR_TEPAT_WAKTU // Untuk menghitung Hadir (Hadir)
+  TERLAMBAT       // Untuk menghitung Terlambat (Terlambat)
+  ABSEN           // Untuk menghitung Absen (Absen)            // Jika ada status Izin
+}
 
