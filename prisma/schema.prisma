@@ -164,3 +164,9 @@ enum StatusKepegawaian {
   PHL   
 }
 
+model SystemSetting {
+  id        Int      @id @default(autoincrement())
+  key       String   @unique // Contoh: "ATTENDANCE_CONFIG"
+  value     Json     // Menyimpan: { startHour: 8, startMinute: 0, tolerance: 15 }
+  updatedAt DateTime @updatedAt
+}

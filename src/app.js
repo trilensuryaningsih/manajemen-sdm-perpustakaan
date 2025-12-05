@@ -10,7 +10,7 @@ const reportRoutes = require('./routes/reports.routes');
 const adminRoutes = require('./routes/admin');
 const cutiRoutes = require('./routes/cuti.routes');
 const errorHandler = require('./middlewares/error.middleware');
-
+const settingRoutes = require('./routes/settings.routes'); // Tambahkan 's'
 
 const app = express();
 app.use(helmet());
@@ -29,7 +29,7 @@ app.use('/api/tasks', taskRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/cuti', cutiRoutes);
-
+app.use('/api/settings', settingRoutes);
 
 
 
