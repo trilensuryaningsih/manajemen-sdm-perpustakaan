@@ -42,8 +42,7 @@ const getDashboard = async (req, res, next) => {
             }
         });
 
-        // 3. Tingkat Penyelesaian (persentase penyelesaian tugas oleh user di bulan ini)
-		// Dihitung sebagai: completed tasks this month / total tasks assigned this month
+        // 3. Tingkat Penyelesaian
 		const tasksAssignedThisMonth = await prisma.task.count({
 			where: {
 				assigneeId: userId,
@@ -68,7 +67,7 @@ const getDashboard = async (req, res, next) => {
 			: 0;
 
 
-        // 4. Absensi Hari Ini (check-in & check-out)
+        // 4. Absensi Hari Ini
         const absensiHariIni = await prisma.attendance.findFirst({
             where: {
                 userId,
@@ -120,7 +119,7 @@ const getDashboard = async (req, res, next) => {
 };
 
 // =======================================
-// 2. GET PROFILE (LENGKAP: Dengan Alamat & Telepon)
+// 2. GET PROFILE
 // =======================================
 const getProfile = async (req, res, next) => {
     try {
@@ -133,7 +132,7 @@ const getProfile = async (req, res, next) => {
         
         if (!user) return res.status(404).json({ message: 'User not found' });
         
-        // Return data lengkap
+        // Return data lengkap termasuk statusKepegawaian
         res.json({ 
             id: user.id, 
             name: user.name, 
@@ -141,7 +140,8 @@ const getProfile = async (req, res, next) => {
             role: user.role.name, 
             position: user.position, 
             phone: user.phone, 
-            alamat: user.alamat, 
+            alamat: user.alamat,
+            statusKepegawaian: user.statusKepegawaian, // <-- DITAMBAHKAN
             createdAt: user.createdAt 
         });
     } catch (err) { next(err); }
@@ -177,7 +177,7 @@ const changePassword = async (req, res, next) => {
 };
 
 // =======================================
-// 4. UPDATE PROFILE (NAMA & TELEPON SAJA)
+// 4. UPDATE PROFILE
 // =======================================
 const updateProfile = async (req, res, next) => {
     try {
@@ -186,7 +186,6 @@ const updateProfile = async (req, res, next) => {
         
         const data = {};
         if (name) data.name = name;
-        // Kita gunakan logika yang sudah direvisi sebelumnya (hanya telepon, alamat diabaikan)
         if (phone !== undefined) data.phone = phone;
         
         const updated = await prisma.user.update({ 
